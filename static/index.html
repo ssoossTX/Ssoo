@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Кликер - Онлайн игра</title>
+  <meta name="description" content="Онлайн игра-кликер, зарабатывайте очки и покупайте улучшения!">
+  <script type="module" crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/+esm"></script>
+  <script type="module" crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/+esm"></script>
+  
+  <style>
+    /* Базовые стили */
+    :root {
+      --primary: #4f46e5;
+      --primary-lighter: #6366f1;
+      --bg-color: #f5f5f5;
+      --text-color: #1f2937;
+      --card-bg: #ffffff;
+      --success: #10b981;
+      --error: #ef4444;
+    }
+    
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      transition: background-color 0.3s, color 0.3s;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .header h1 {
+      font-size: 1.5rem;
+      margin: 0;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-lighter) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 0;
+    }
+    
+    .game-stats {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      width: 100%;
+    }
+    
+    .stat-card {
+      background-color: var(--card-bg);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      flex: 1;
+      max-width: 200px;
+      text-align: center;
+    }
+    
+    .stat-card h2 {
+      font-size: 2rem;
+      margin: 0.5rem 0;
+      color: var(--primary);
+    }
+    
+    .stat-label {
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+    
+    .click-area {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-lighter) 100%);
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      margin: 2rem 0;
+      transition: transform 0.1s;
+      user-select: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    
+    .click-area:active {
+      transform: scale(0.95);
+    }
+    
+    .click-value {
+      color: white;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    
+    .upgrades-section {
+      width: 100%;
+      margin-top: 2rem;
+    }
+    
+    .tab-buttons {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .tab-button {
+      padding: 0.5rem 1rem;
+      background-color: #f3f4f6;
+      border: none;
+      border-radius: 0.25rem;
+      cursor: pointer;
+    }
+    
+    .tab-button.active {
+      background-color: var(--primary);
+      color: white;
+    }
+    
+    .upgrades-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    
+    .upgrade-card {
+      background-color: var(--card-bg);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .upgrade-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    
+    .upgrade-icon {
+      font-size: 1.5rem;
+      margin-right: 0.5rem;
+    }
+    
+    .upgrade-card button {
+      margin-top: auto;
+      padding: 0.5rem 1rem;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 0.25rem;
+      cursor: pointer;
+    }
+    
+    .upgrade-card button:disabled {
+      background-color: #d1d5db;
+      cursor: not-allowed;
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 2rem 0;
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+    
+    /* Темная тема */
+    .dark {
+      --bg-color: #111827;
+      --text-color: #f9fafb;
+      --card-bg: #1f2937;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>Кликер-игра</h1>
+      <button id="theme-toggle" aria-label="Переключить тему">🌙 / ☀️</button>
+    </header>
+    
+    <main class="main">
+      <div class="game-stats">
+        <div class="stat-card">
+          <div class="stat-label">Очки</div>
+          <h2 id="score">0</h2>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">В секунду</div>
+          <h2 id="per-second">0</h2>
+        </div>
+      </div>
+      
+      <div class="level-progress">
+        <div class="stat-label">Уровень <span id="level">1</span></div>
+        <div class="progress-bar"></div>
+      </div>
+      
+      <div class="click-area" id="click-area">
+        <div class="click-value">+<span id="click-value">1</span></div>
+      </div>
+      
+      <div class="upgrades-section">
+        <h2>Улучшения</h2>
+        <div class="tab-buttons">
+          <button id="auto-tab" class="tab-button active">Автокликеры</button>
+          <button id="multiplier-tab" class="tab-button">Множители</button>
+          <button id="special-tab" class="tab-button">Специальные</button>
+        </div>
+        
+        <div class="upgrades-grid" id="upgrades-container">
+          <!-- Upgrades will be added here dynamically -->
+        </div>
+      </div>
+      
+      <div class="achievements-section">
+        <h2>Достижения</h2>
+        <div class="achievements-grid" id="achievements-container">
+          <!-- Achievements will be added here dynamically -->
+        </div>
+      </div>
+    </main>
+    
+    <footer class="footer">
+      <p>Кликер-игра &copy; 2025. Все права защищены.</p>
+      <p>
+        <a href="https://github.com/ssoossTX/Ssoo" target="_blank" rel="noopener noreferrer">
+          GitHub репозиторий
+        </a>
+      </p>
+    </footer>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Состояние игры
+      const gameState = {
+        score: 0,
+        perSecond: 0,
+        level: 1,
+        clickValue: 1
+      };
+      
+      // Улучшения
+      const upgrades = [
+        {
+          id: "auto-1",
+          type: "autoTapper",
+          name: "Автокликер",
+          description: "Кликает автоматически каждую секунду",
+          cost: 10,
+          baseValue: 0.1,
+          icon: "⚡",
+          count: 0
+        },
+        {
+          id: "auto-2",
+          type: "autoTapper",
+          name: "Мини-робот",
+          description: "Маленький робот, который помогает кликать",
+          cost: 50,
+          baseValue: 0.5,
+          icon: "🤖",
+          count: 0
+        },
+        {
+          id: "mult-1",
+          type: "multiplier",
+          name: "Усилитель кликов",
+          description: "Увеличивает стоимость каждого клика",
+          cost: 25,
+          baseValue: 1,
+          icon: "💪",
+          count: 0
+        },
+        {
+          id: "special-1",
+          type: "special",
+          name: "Бонус x2",
+          description: "Удваивает все клики на 30 секунд",
+          cost: 100,
+          baseValue: 2,
+          icon: "⭐",
+          count: 0
+        }
+      ];
+      
+      // Достижения
+      const achievements = [
+        {
+          id: "first-click",
+          name: "Первый клик",
+          description: "Сделайте свой первый клик",
+          icon: "🎯",
+          unlocked: false
+        },
+        {
+          id: "first-upgrade",
+          name: "Первое улучшение",
+          description: "Купите первое улучшение",
+          icon: "🔧",
+          unlocked: false
+        },
+        {
+          id: "score-100",
+          name: "Сотня",
+          description: "Наберите 100 очков",
+          icon: "💯",
+          unlocked: false
+        }
+      ];
+      
+      // Текущий выбранный тип улучшений
+      let selectedUpgradeType = 'autoTapper';
+      
+      // Элементы UI
+      const scoreElement = document.getElementById('score');
+      const perSecondElement = document.getElementById('per-second');
+      const levelElement = document.getElementById('level');
+      const clickValueElement = document.getElementById('click-value');
+      const clickArea = document.getElementById('click-area');
+      const upgradesContainer = document.getElementById('upgrades-container');
+      const achievementsContainer = document.getElementById('achievements-container');
+      const themeToggle = document.getElementById('theme-toggle');
+      
+      // Вкладки улучшений
+      const autoTab = document.getElementById('auto-tab');
+      const multiplierTab = document.getElementById('multiplier-tab');
+      const specialTab = document.getElementById('special-tab');
+      
+      // Обновление отображения
+      function updateUI() {
+        scoreElement.textContent = Math.floor(gameState.score);
+        perSecondElement.textContent = gameState.perSecond.toFixed(1);
+        levelElement.textContent = gameState.level;
+        clickValueElement.textContent = gameState.clickValue;
+        
+        renderUpgrades();
+        renderAchievements();
+      }
+      
+      // Рендеринг улучшений
+      function renderUpgrades() {
+        upgradesContainer.innerHTML = '';
+        
+        const filteredUpgrades = upgrades.filter(upgrade => upgrade.type === selectedUpgradeType);
+        
+        filteredUpgrades.forEach(upgrade => {
+          const canAfford = gameState.score >= upgrade.cost;
+          
+          const upgradeCard = document.createElement('div');
+          upgradeCard.className = 'upgrade-card';
+          
+          upgradeCard.innerHTML = `
+            <div class="upgrade-header">
+              <div class="upgrade-icon">${upgrade.icon}</div>
+              <div class="upgrade-title">
+                <h3>${upgrade.name} ${upgrade.count > 0 ? `(${upgrade.count})` : ''}</h3>
+              </div>
+            </div>
+            <p>${upgrade.description}</p>
+            <div class="upgrade-details">
+              <div>Стоимость: ${upgrade.cost}</div>
+              <div>Бонус: +${upgrade.baseValue} ${upgrade.type === 'autoTapper' ? 'в сек.' : 'за клик'}</div>
+            </div>
+            <button ${!canAfford ? 'disabled' : ''} data-upgrade-id="${upgrade.id}">
+              Купить
+            </button>
+          `;
+          
+          const button = upgradeCard.querySelector('button');
+          button.addEventListener('click', () => purchaseUpgrade(upgrade.id));
+          
+          upgradesContainer.appendChild(upgradeCard);
+        });
+      }
+      
+      // Рендеринг достижений
+      function renderAchievements() {
+        achievementsContainer.innerHTML = '';
+        
+        achievements.forEach(achievement => {
+          const achievementCard = document.createElement('div');
+          achievementCard.className = `upgrade-card ${achievement.unlocked ? 'unlocked' : 'locked'}`;
+          
+          achievementCard.innerHTML = `
+            <div class="upgrade-header">
+              <div class="upgrade-icon">${achievement.icon}</div>
+              <div class="upgrade-title">
+                <h3>${achievement.name}</h3>
+              </div>
+            </div>
+            <p>${achievement.description}</p>
+            <div class="achievement-status">
+              ${achievement.unlocked ? '✅ Разблокировано' : '🔒 Заблокировано'}
+            </div>
+          `;
+          
+          achievementsContainer.appendChild(achievementCard);
+        });
+      }
+      
+      // Обработка клика
+      function handleClick() {
+        gameState.score += gameState.clickValue;
+        
+        // Проверка на достижения
+        if (!achievements[0].unlocked) {
+          achievements[0].unlocked = true;
+          showToast('🏆 Достижение разблокировано!', 'Первый клик');
+        }
+        
+        if (gameState.score >= 100 && !achievements[2].unlocked) {
+          achievements[2].unlocked = true;
+          showToast('🏆 Достижение разблокировано!', 'Сотня');
+        }
+        
+        updateUI();
+      }
+      
+      // Покупка улучшения
+      function purchaseUpgrade(upgradeId) {
+        const upgradeIndex = upgrades.findIndex(upgrade => upgrade.id === upgradeId);
+        
+        if (upgradeIndex === -1) return;
+        
+        const upgrade = upgrades[upgradeIndex];
+        
+        if (gameState.score < upgrade.cost) {
+          showToast('Ошибка', `Недостаточно средств. Нужно еще ${upgrade.cost - gameState.score} очков`);
+          return;
+        }
+        
+        // Вычитаем стоимость
+        gameState.score -= upgrade.cost;
+        
+        // Применяем эффект улучшения
+        if (upgrade.type === 'autoTapper') {
+          gameState.perSecond += upgrade.baseValue;
+        } else if (upgrade.type === 'multiplier') {
+          gameState.clickValue += upgrade.baseValue;
+        }
+        
+        // Увеличиваем количество и стоимость
+        upgrades[upgradeIndex].count += 1;
+        upgrades[upgradeIndex].cost = Math.floor(upgrades[upgradeIndex].cost * 1.2);
+        
+        // Достижение "Первое улучшение"
+        if (!achievements[1].unlocked) {
+          achievements[1].unlocked = true;
+          showToast('🏆 Достижение разблокировано!', 'Первое улучшение');
+        }
+        
+        showToast('Улучшение куплено!', `Вы приобрели ${upgrade.name}`);
+        updateUI();
+      }
+      
+      // Показать уведомление
+      function showToast(title, message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `
+          <div class="toast-header">${title}</div>
+          <div class="toast-body">${message}</div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+          toast.classList.add('show');
+        }, 100);
+        
+        setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => {
+            toast.remove();
+          }, 300);
+        }, 3000);
+      }
+      
+      // Пассивный доход
+      setInterval(() => {
+        if (gameState.perSecond > 0) {
+          gameState.score += gameState.perSecond / 10; // Интервал 100 мс, поэтому делим на 10
+          
+          if (gameState.score >= 100 && !achievements[2].unlocked) {
+            achievements[2].unlocked = true;
+            showToast('🏆 Достижение разблокировано!', 'Сотня');
+          }
+          
+          updateUI();
+        }
+      }, 100);
+      
+      // Обработчики событий
+      clickArea.addEventListener('click', handleClick);
+      
+      // Переключение вкладок улучшений
+      autoTab.addEventListener('click', () => {
+        selectedUpgradeType = 'autoTapper';
+        autoTab.classList.add('active');
+        multiplierTab.classList.remove('active');
+        specialTab.classList.remove('active');
+        renderUpgrades();
+      });
+      
+      multiplierTab.addEventListener('click', () => {
+        selectedUpgradeType = 'multiplier';
+        autoTab.classList.remove('active');
+        multiplierTab.classList.add('active');
+        specialTab.classList.remove('active');
+        renderUpgrades();
+      });
+      
+      specialTab.addEventListener('click', () => {
+        selectedUpgradeType = 'special';
+        autoTab.classList.remove('active');
+        multiplierTab.classList.remove('active');
+        specialTab.classList.add('active');
+        renderUpgrades();
+      });
+      
+      // Переключение темы
+      themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark');
+      });
+      
+      // Инициализация
+      updateUI();
+      
+      // Добавление стилей для уведомлений
+      const toastStyles = document.createElement('style');
+      toastStyles.textContent = `
+        .toast {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          background-color: var(--card-bg);
+          padding: 1rem;
+          border-radius: 0.5rem;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+          max-width: 300px;
+          transition: opacity 0.3s, transform 0.3s;
+          opacity: 0;
+          transform: translateY(20px);
+          z-index: 1000;
+        }
+        
+        .toast.show {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        
+        .toast-header {
+          font-weight: bold;
+          margin-bottom: 0.5rem;
+          color: var(--primary);
+        }
+        
+        .achievements-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 1rem;
+          margin-top: 1rem;
+        }
+        
+        .achievement-status {
+          margin-top: 0.5rem;
+          font-size: 0.875rem;
+        }
+      `;
+      document.head.appendChild(toastStyles);
+    });
+  </script>
+</body>
+</html>
