@@ -6,16 +6,30 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import { useState, useEffect } from "react";
 
-function Router() {
+// Компонент нормальной страницы Home без параметров
+function NormalHome() {
+  return <Home />;
+}
+
+// Компонент статической страницы Home с параметром isStatic
+function StaticHome() {
+  return <Home isStatic={true} />;
+}
+
+function Router() {  
   return (
     <Switch>
-      <Route path="/" component={Home}/>
+      <Route path="/" component={NormalHome} />
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-function App() {
+interface AppProps {
+  staticMode?: boolean;
+}
+
+function App({ staticMode = false }: AppProps) {
   const [mounted, setMounted] = useState(false);
 
   // This ensures hydration mismatch doesn't occur due to server/client theme differences
@@ -29,7 +43,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
+      {staticMode ? <StaticHome /> : <Router />}
       <Toaster />
     </QueryClientProvider>
   );

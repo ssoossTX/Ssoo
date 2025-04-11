@@ -7,9 +7,16 @@ import UpgradesSection from "@/components/UpgradesSection";
 import Achievements from "@/components/Achievements";
 import Footer from "@/components/Footer";
 import { useGame } from "@/hooks/useGame";
+import { useStaticGame } from "@/hooks/useStaticGame";
 
-export default function Home() {
-  const game = useGame();
+interface HomeProps {
+  isStatic?: boolean;
+}
+
+export default function Home({ isStatic = false }: HomeProps) {
+  // Выбор нужного хука в зависимости от режима
+  const game = isStatic ? useStaticGame() : useGame();
+  
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
